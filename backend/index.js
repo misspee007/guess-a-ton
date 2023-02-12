@@ -1,92 +1,86 @@
 const express = require("express");
-const http = require("http");
-const cors = require("cors");
-const { CONFIG } = require("./src/config");
-const index = require("./src/routes/index");
-
 const app = express();
-app.use(cors());
-app.use(index);
-
-const server = http.createServer(app);
-
-const { Server } = require("socket.io");
-const io = new Server(server, {
+const server = require("http").createServer(app);
+const io = require("socket.io")(server, {
   cors: {
     origin: "*",
   },
 });
+const { CONFIG } = require("./src/config");
 
-// number of players in a room
-const game = {
-  rooms: [],
-};
+let players = [];
+let sessions = [];
 
 io.on("connection", (socket) => {
-  console.log("a user connected", socket.id);
+  try {
+    console.log(`Player connected: ${socket.id}`);
 
-  socket.on("new room", (player) => {
-    // check id of last room in array and add 1
-    const lastRoomId = game.rooms[game.rooms.length - 1]?.id || 0;
-    const newRoomId = lastRoomId ? parseInt(lastRoomId) + 1 : 1;
-    socket.join(`${newRoomId}`);
-
-    game.rooms.push({
-      id: `${newRoomId}`,
-      players: [
-        {
-          id: socket.id,
-          username: player.username,
-          score: 0,
-        },
-      ],
-    });
-
-    io.to(`${newRoomId}`).emit("game session", {
-      ...player,
-      room: `${newRoomId}`,
-      gameMaster: true,
-      msg: `Game Master ${player.username} joined`,
-    });
-
-    console.log(
-      `user ${player.username} created room ${newRoomId}, ${socket.id}`
-    );
-  });
-
-  socket.on("join room", (player) => {
-    const roomExists = game.rooms.findIndex((r) => r.id === player.room);
-
-    if (roomExists === -1) {
-      console.log(
-        `user ${player.username} tried to join room ${player.room}, ${socket.id}`
-      );
-      // return;
-      socket.emit("error", "Room does not exist");
-    } else {
-      socket.join(`${player.room}`);
-
-      game.rooms[roomExists].players.push({
+    socket.on("join-session", (sessionId) => {
+      const session = sessions.find((session) => session.id === sessionId);
+      if (!session) {
+        socket.emit("invalid-session", sessionId);
+        return;
+      }
+      socket.join(sessionId);
+      const player = {
         id: socket.id,
-        username: player.username,
+        name: "Player" + (players.length + 1),
         score: 0,
+      };
+      players.push(player);
+      io.to(sessionId).emit("update-players", players);
+      socket.emit("joined-session", session, player);
+    });
+
+    socket.on("start-session", (session) => {
+      sessions.push(session);
+      socket.broadcast.emit("update-sessions", sessions);
+    });
+
+    socket.on("create-question", (sessionId, question) => {
+      let session = sessions.find((session) => session.id === sessionId);
+      if (!session) {
+        socket.emit("invalid-session");
+        return;
+      }
+      session = { ...session, question };
+      io.to(sessionId).emit("update-question", question);
+    });
+
+    socket.on("guess", (sessionId, guess) => {
+      const session = sessions.find((session) => session.id === sessionId);
+      if (!session) {
+        socket.emit("invalid-session");
+        return;
+      }
+      if (guess === session.answer) {
+        const player = players.find((player) => player.id === socket.id);
+        player.score += 10;
+        session.winner = player;
+        io.to(sessionId).emit("update-players", players);
+        io.to(sessionId).emit("update-winner", player);
+      }
+    });
+
+    socket.on("disconnect", () => {
+      console.log(`Player disconnected: ${socket.id}`);
+      players = players.filter((player) => player.id !== socket.id);
+      sessions.forEach((session) => {
+        if (session.players.includes(socket.id)) {
+          session.players = session.players.filter((id) => id !== socket.id);
+          if (session.players.length === 0) {
+            sessions = sessions.filter((s) => s.id !== session.id);
+          }
+        }
       });
-
-      io.to(`${player.room}`).emit("game session", {
-        ...player,
-        gameMaster: false,
-        msg: `Player ${player.username} joined`,
-      });
-
-      console.log(`user ${username} joined room ${room}, ${socket.id}`);
-    }
-  });
-
-  socket.on("disconnect", () => {
-    console.log(`user disconnected, ${socket.id}`);
-  });
+      socket.broadcast.emit("update-players", players);
+      socket.broadcast.emit("update-sessions", sessions);
+    });
+  } catch (error) {
+    console.log(error);
+  }
 });
 
 server.listen(CONFIG.PORT, () => {
-  console.log("listening on *:3000");
+  console.log(`Server listening on port ${CONFIG.PORT}`);
 });
