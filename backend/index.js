@@ -28,13 +28,28 @@ io.on("connection", (socket) => {
         score: 0,
       };
       players.push(player);
+      session.players.push(player);
       io.to(sessionId).emit("update-players", players);
-      socket.emit("joined-session", session, player);
-    });
+      io.to(sessionId).emit("joined-session", session, player);
+    }); 
 
-    socket.on("start-session", (session) => {
+    socket.on("start-session", ({ id }) => {
+      const session = {
+        id: Date.now(),
+        players: [],
+        question: null,
+        answer: null,
+        winner: null,
+        gameMaster: {
+          id,
+          name: "Shinobi",
+          score: 0,
+        }
+      };
       sessions.push(session);
+      socket.join(session.id);
       socket.broadcast.emit("update-sessions", sessions);
+      io.to(session.id).emit("joined-session", session, session.gameMaster);
     });
 
     socket.on("create-question", (sessionId, question) => {

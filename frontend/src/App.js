@@ -17,23 +17,18 @@ const App = () => {
     socket.on("joined-session", (currSession, currPlayer) => {
       setSession(currSession);
       setPlayer(currPlayer);
-      console.log(`Player: ${JSON.stringify(player)}`);
-      console.log(`Session: ${JSON.stringify(session)}`);
     });
     socket.on("update-sessions", (currSessions) => {
       setSessions(currSessions);
-      console.log(`Sessions: ${JSON.stringify(sessions)}`);
     });
     socket.on("update-players", (currPlayers) => {
       setPlayers(currPlayers);
-      console.log(`Players: ${JSON.stringify(players)}`);
     });
     socket.on("update-question", (question) => {
       setQuestion(question);
     });
     socket.on("update-winner", (currWinner) => {
       setWinner(currWinner);
-      console.log(`Winner is ${JSON.stringify(winner)}`);
     });
     socket.on("invalid-session", (sessionId) => {
       setErr(
@@ -47,16 +42,7 @@ const App = () => {
   };
 
   const startSession = () => {
-    const session = {
-      id: Date.now(),
-      players: [socket.id],
-      question: null,
-      answer: null,
-      winner: null,
-      gameMaster: socket.id,
-    };
-    setSession(session);
-    socket.emit("start-session", session);
+    socket.emit("start-session", { id: socket.id });
   };
 
   const createQuestion = ({ question, answer }) => {
@@ -80,7 +66,7 @@ const App = () => {
             {sessions.map((session) => (
               <li key={session.id}>
                 <button onClick={() => joinSession(session.id)}>
-                  Join Session
+                  Join Session - {session.id}
                 </button>
               </li>
             ))}
@@ -108,7 +94,7 @@ const App = () => {
           <h3>Players:</h3>
           {players.map((player) => (
             <p key={player.id}>
-              {player.id} - Score: {player.score}
+              {player.name || "Game Master"} - Score: {player.score}
             </p>
           ))}
           {session.question === null && session.gameMaster === socket.id && (
