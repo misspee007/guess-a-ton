@@ -1,121 +1,159 @@
-import { useState, useEffect } from "react";
-import socketIOClient from "socket.io-client";
-const ENDPOINT = `http://localhost:3001`;
+import React, { useState, useEffect, useRef } from "react";
+import io from "socket.io-client";
 
-const socket = socketIOClient(ENDPOINT);
+const socket = io("http://localhost:3001");
 
-
-function App() {
-  const [messages, setMessages] = useState([]);
-  const [msg, setMsg] = useState("");
-  const [error, setError] = useState("");
-  const [player, setPlayer] = useState({
-    username: "",
-    room: "",
-    gameMaster: false,
+const App = () => {
+  const [err, setErr] = useState("");
+  // eslint-disable-next-line no-unused-vars
+  const [player, setPlayer] = useState({});
+  const [sessions, setSessions] = useState([]);
+  const [session, setSession] = useState({});
+  const [inputValues, setInputValues] = useState({
+    question: "",
+    answer: "",
+    guess: "",
   });
 
+  const messagesRef = useRef(null);
+
   useEffect(() => {
-    socket.on("game session", function ({ username, room, gameMaster, msg }) {
-      console.log("server says:", username, room, gameMaster);
-
-      setPlayer({ ...player, username, room, gameMaster });
-      setMessages((messages) => [...messages, msg]);
+    socket.on("joined-session", (currSession, currPlayer) => {
+      setSession(currSession);
+      setPlayer(currPlayer);
     });
-
-    socket.on("error", function (msg) {
-      console.log("server says:", msg);
-
-      setError(msg);
+    socket.on("update-session", (updatedSession) => {
+      setSession(updatedSession);
+      console.log("updatedSession: ", session);
     });
+    socket.on("update-sessions", (currSessions) => {
+      setSessions(currSessions);
+    });
+    socket.on("new-message", (message) => {
+      // append li to ul
+      const li = document.createElement("li");
+      li.innerText = message;
+      messagesRef.current.appendChild(li);
+    });
+    socket.on("error", (error) => {
+      setErr(error);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function handleNewRoom(e) {
-    e.preventDefault();
-    console.log("clicked new room");
+  const joinSession = (sessionId) => {
+    socket.emit("join-session", sessionId);
+  };
 
-    socket.emit("new room", player);
-  }
+  const startSession = () => {
+    console.log("client says session before startSession: ", session);
+    socket.emit("start-session");
+  };
 
-  function handleJoinRoom(e) {
-    e.preventDefault();
-    console.log("clicked join room");
+  const createQuestion = () => {
+    socket.emit("create-question", session.id, {
+      question: inputValues.question,
+      answer: inputValues.answer,
+    });
+    // clear input
+    setInputValues({ ...inputValues, question: "", answer: "" });
+  };
 
-    let room = prompt("Enter room number");
-    console.log(`room: ${room}`);
-    setPlayer({ ...player, room: room, gameMaster: false });
+  const submitGuess = () => {
+    // send guess to server
+    socket.emit("guess", session.id, inputValues.guess);
+    // clear input
+    setInputValues({ ...inputValues, guess: "" });
+  };
 
-    socket.emit("join room", player);
-  }
-
-  function handleStartGame(e) {
-    e.preventDefault();
-    console.log("clicked start game session");
-
-    socket.emit("new game", player);
+  function handleInputChange(e) {
+    const { name, value } = e.target;
+    setInputValues({ ...inputValues, [name]: value });
   }
 
   return (
-    <div>
-      {messages && (
-        <ul id="messages">
-          {messages.map((msg, index) => (
-            <li key={index}>{msg}</li>
-          ))}
-        </ul>
-      )}
-      <form onSubmit={(e) => e.preventDefault()}>
-        {!player.room && (
-          <label>
-            <input
-              type="text"
-              name="username"
-              id="username"
-              value={player.username}
-              onChange={(e) =>
-                setPlayer({ ...player, username: e.target.value })
-              }
-              placeholder="Username"
-              autoComplete="off"
-            />
-          </label>
-        )}
-        {player.room && !player.gameMaster && (
-          <label>
-            <input
-              type="text"
-              name="msgInput"
-              id="msgInput"
-              value={msg}
-              onChange={(e) => setMsg(e.target.value)}
-              placeholder="Message"
-              autoComplete="off"
-            />
-          </label>
-        )}
-
-        {error && <p>{error}</p>}
-
-        {!player.room && (
-          <>
-            <button id="new" onClick={handleNewRoom}>
-              New Room
-            </button>
-
-            <button id="join" type="button" onClick={handleJoinRoom}>
-              Join Room
-            </button>
-          </>
-        )}
-
-        {player.room && player.gameMaster && (
-          <button id="start" type="button" onClick={handleStartGame}>
-            Start Game
+    <form onSubmit={(e) => e.preventDefault()}>
+      {!session.id && (
+        <div>
+          <h3>Available Sessions:</h3>
+          <ul>
+            {sessions.map((session) => (
+              <li key={session.id}>
+                <button onClick={() => joinSession(session.id)}>
+                  Join Session - {session.id}
+                </button>
+              </li>
+            ))}
+          </ul>
+          <button type="button" onClick={startSession}>
+            Start Session
           </button>
-        )}
-      </form>
-    </div>
+        </div>
+      )}
+      {session.id && (
+        <div>
+          <h3>Current Session: {session.id}</h3>
+          <h4>Question: {session.question}</h4>
+          {!session.winner?.id && session.gameMaster.id !== socket.id && (
+            <>
+              <label htmlFor="guess">
+                <input
+                  type="text"
+                  name="guess"
+                  placeholder="Answer"
+                  onChange={handleInputChange}
+                  value={inputValues.guess}
+                />
+              </label>
+              <button type="button" onClick={submitGuess}>
+                Guess
+              </button>
+            </>
+          )}
+          {session.winner?.id && (
+            <>
+              <p>The winner is: {session.winner.name}</p>
+              <p>The answer is: {session.answer}</p>
+            </>
+          )}
+          <h3>Players:</h3>
+          {session.players.map((player) => (
+            <p key={player.id}>
+              {player.name} - Score: {player.score}
+            </p>
+          ))}
+          <h3>Game Master:</h3>
+          <p>{session.gameMaster.name}</p>
+          {session.question === null && session.gameMaster.id === socket.id && (
+            <div>
+              <label htmlFor="question">
+                <input
+                  type="text"
+                  name="question"
+                  placeholder="Question"
+                  onChange={handleInputChange}
+                  value={inputValues.question}
+                />
+              </label>
+              <label htmlFor="answer">
+                <input
+                  type="text"
+                  name="answer"
+                  placeholder="Answer"
+                  onChange={handleInputChange}
+                  value={inputValues.answer}
+                />
+              </label>
+              <button onClick={createQuestion}>Set Question</button>
+            </div>
+          )}
+          <ul ref={messagesRef}></ul>
+        </div>
+        // display messages
+      )}
+      {err && <div>{err}</div>}
+    </form>
   );
-}
+};
 
 export default App;
