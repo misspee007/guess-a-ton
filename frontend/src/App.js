@@ -1,40 +1,44 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import io from "socket.io-client";
 
 const socket = io("http://localhost:3001");
 
 const App = () => {
-  const [player, setPlayer] = useState({});
-  const [session, setSession] = useState({});
-  const [sessions, setSessions] = useState([]);
-  const [players, setPlayers] = useState([]);
-  const [question, setQuestion] = useState({});
-  const [guess, setGuess] = useState("");
-  const [winner, setWinner] = useState({});
   const [err, setErr] = useState("");
+  // eslint-disable-next-line no-unused-vars
+  const [player, setPlayer] = useState({});
+  const [sessions, setSessions] = useState([]);
+  const [session, setSession] = useState({});
+  const [inputValues, setInputValues] = useState({
+    question: "",
+    answer: "",
+    guess: "",
+  });
+
+  const messagesRef = useRef(null);
 
   useEffect(() => {
     socket.on("joined-session", (currSession, currPlayer) => {
       setSession(currSession);
       setPlayer(currPlayer);
     });
+    socket.on("update-session", (updatedSession) => {
+      setSession(updatedSession);
+      console.log("updatedSession: ", session);
+    });
     socket.on("update-sessions", (currSessions) => {
       setSessions(currSessions);
     });
-    socket.on("update-players", (currPlayers) => {
-      setPlayers(currPlayers);
+    socket.on("new-message", (message) => {
+      // append li to ul
+      const li = document.createElement("li");
+      li.innerText = message;
+      messagesRef.current.appendChild(li);
     });
-    socket.on("update-question", (question) => {
-      setQuestion(question);
+    socket.on("error", (error) => {
+      setErr(error);
     });
-    socket.on("update-winner", (currWinner) => {
-      setWinner(currWinner);
-    });
-    socket.on("invalid-session", (sessionId) => {
-      setErr(
-        `Oops! Session with ID ${sessionId} does not exist, try starting a new session or joining another one.`
-      );
-    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const joinSession = (sessionId) => {
@@ -42,23 +46,33 @@ const App = () => {
   };
 
   const startSession = () => {
-    socket.emit("start-session", { id: socket.id });
+    console.log("client says session before startSession: ", session);
+    socket.emit("start-session");
   };
 
-  const createQuestion = ({ question, answer }) => {
-    console.log(
-      `${socket.id} set question ${question} with answer ${answer}. The Game Master is ${session.gameMaster}`
-    );
-    socket.emit("create-question", session.id, question);
+  const createQuestion = () => {
+    socket.emit("create-question", session.id, {
+      question: inputValues.question,
+      answer: inputValues.answer,
+    });
+    // clear input
+    setInputValues({ ...inputValues, question: "", answer: "" });
   };
 
-  const submitGuess = (guess) => {
-    console.log(`Player ${player} guessed: ${guess}, in session ${session.id}`);
-    socket.emit("guess", session.id, guess);
+  const submitGuess = () => {
+    // send guess to server
+    socket.emit("guess", session.id, inputValues.guess);
+    // clear input
+    setInputValues({ ...inputValues, guess: "" });
   };
+
+  function handleInputChange(e) {
+    const { name, value } = e.target;
+    setInputValues({ ...inputValues, [name]: value });
+  }
 
   return (
-    <div>
+    <form onSubmit={(e) => e.preventDefault()}>
       {!session.id && (
         <div>
           <h3>Available Sessions:</h3>
@@ -71,57 +85,74 @@ const App = () => {
               </li>
             ))}
           </ul>
-          <button onClick={startSession}>Start Session</button>
+          <button type="button" onClick={startSession}>
+            Start Session
+          </button>
         </div>
       )}
       {session.id && (
         <div>
           <h3>Current Session: {session.id}</h3>
-          <h4>Question: {question.question}</h4>
-          {!winner.id && (
+          <h4>Question: {session.question}</h4>
+          {!session.winner?.id && session.gameMaster.id !== socket.id && (
             <>
-              <input
-                type="text"
-                placeholder="Answer"
-                onChange={(e) => setGuess(e.target.value)}
-              />
-              <button type="button" onClick={() => submitGuess(guess)}>
+              <label htmlFor="guess">
+                <input
+                  type="text"
+                  name="guess"
+                  placeholder="Answer"
+                  onChange={handleInputChange}
+                  value={inputValues.guess}
+                />
+              </label>
+              <button type="button" onClick={submitGuess}>
                 Guess
               </button>
             </>
           )}
-          {winner.id && <p>The winner is: {winner.id}</p>}
+          {session.winner?.id && (
+            <>
+              <p>The winner is: {session.winner.name}</p>
+              <p>The answer is: {session.answer}</p>
+            </>
+          )}
           <h3>Players:</h3>
-          {players.map((player) => (
+          {session.players.map((player) => (
             <p key={player.id}>
-              {player.name || "Game Master"} - Score: {player.score}
+              {player.name} - Score: {player.score}
             </p>
           ))}
-          {session.question === null && session.gameMaster === socket.id && (
+          <h3>Game Master:</h3>
+          <p>{session.gameMaster.name}</p>
+          {session.question === null && session.gameMaster.id === socket.id && (
             <div>
-              <input
-                type="text"
-                placeholder="Question"
-                onChange={(e) =>
-                  setQuestion({ ...question, question: e.target.value})
-                }
-              />
-              <input
-                type="text"
-                placeholder="Answer"
-                onChange={(e) =>
-                  setQuestion({...question, answer: e.target.value })
-                }
-              />
-              <button onClick={() => createQuestion(question)}>
-                Set Question
-              </button>
+              <label htmlFor="question">
+                <input
+                  type="text"
+                  name="question"
+                  placeholder="Question"
+                  onChange={handleInputChange}
+                  value={inputValues.question}
+                />
+              </label>
+              <label htmlFor="answer">
+                <input
+                  type="text"
+                  name="answer"
+                  placeholder="Answer"
+                  onChange={handleInputChange}
+                  value={inputValues.answer}
+                />
+              </label>
+              <button onClick={createQuestion}>Set Question</button>
             </div>
           )}
+          <ul ref={messagesRef}></ul>
         </div>
+        // display messages
       )}
       {err && <div>{err}</div>}
-    </div>
+    </form>
   );
 };
 
