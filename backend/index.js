@@ -1,10 +1,16 @@
 const express = require("express");
-const app = express();
-const server = require("http").createServer(app);
-const index = require("./src/routes");
+const path = require('path');
 const { CONFIG } = require("./src/config");
 
-app.use(index);
+const app = express();
+const server = require("http").createServer(app);
+
+const rootDir = path.resolve('../');
+app.use(express.static(path.join(rootDir, 'frontend', 'build')));
+
+app.get('/', function (req, res) {
+  res.sendFile(path.join(rootDir, 'frontend', 'build', 'index.html'));
+});
 
 const io = require("socket.io")(server, {
   cors: {
