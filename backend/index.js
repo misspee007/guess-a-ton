@@ -1,12 +1,16 @@
 const express = require("express");
 const app = express();
 const server = require("http").createServer(app);
+const index = require("./src/routes");
+const { CONFIG } = require("./src/config");
+
+app.use(index);
+
 const io = require("socket.io")(server, {
   cors: {
     origin: "*",
   },
 });
-const { CONFIG } = require("./src/config");
 
 let sessions = [];
 

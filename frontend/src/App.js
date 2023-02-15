@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import io from "socket.io-client";
+import { CONFIG } from "../src/config";
 
-const socket = io("http://localhost:3001");
+const socket = io(CONFIG.ENDPOINT);
 
 const App = () => {
   const [err, setErr] = useState("");
