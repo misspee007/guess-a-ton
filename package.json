@@ -1,0 +1,17 @@
+{
+  "name": "guessing_game",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "(cd frontend && npm run build) && (cd ../backend && npm run start)"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/misspee007/guess-a-ton.git"
+  },
+  "keywords": [],
+  "author": "Precious Abubakar",
+  "license": "ISC",
+  "homepage": "https://github.com/misspee007/guess-a-ton#readme"
+}
