@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "prestart": "(cd frontend && npm install) && (cd ../backend && npm install)",
     "start": "(cd frontend && npm run build) && (cd ../backend && npm run start)"
   },
   "repository": {
