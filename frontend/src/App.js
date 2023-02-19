@@ -1,3 +1,4 @@
+import "./App.css";
 import React, { useState, useEffect, useRef } from "react";
 import io from "socket.io-client";
 import { CONFIG } from "../src/config";
@@ -75,84 +76,92 @@ const App = () => {
   return (
     <form onSubmit={(e) => e.preventDefault()}>
       {!session.id && (
-        <div>
-          <h3>Available Sessions:</h3>
+        <div className="home">
+          <h1 className="heading-1">Are you ready to guess a ton?!</h1>
           <ul>
             {sessions.map((session) => (
               <li key={session.id}>
                 <button onClick={() => joinSession(session.id)}>
-                  Join Session - {session.id}
+                  Join Game - {session.id}
                 </button>
               </li>
             ))}
           </ul>
-          <button type="button" onClick={startSession}>
-            Start Session
+          <button type="button" className="btn-start" onClick={startSession}>
+            Start Game
           </button>
         </div>
       )}
       {session.id && (
-        <div>
-          <h3>Current Session: {session.id}</h3>
-          <h4>Question: {session.question}</h4>
-          {!session.winner?.id && session.gameMaster.id !== socket.id && (
-            <>
-              <label htmlFor="guess">
-                <input
-                  type="text"
-                  name="guess"
-                  placeholder="Answer"
-                  onChange={handleInputChange}
-                  value={inputValues.guess}
-                />
-              </label>
-              <button type="button" onClick={submitGuess}>
-                Guess
-              </button>
-            </>
-          )}
-          {session.winner?.id && (
-            <>
-              <p>The winner is: {session.winner.name}</p>
-              <p>The answer is: {session.answer}</p>
-            </>
-          )}
-          <h3>Players:</h3>
+        <div className="session">
+          <div className="header">
+            <h1 className="heading-1">Room {session.id}</h1>
+            {session.question && <h2>Question: {session.question}</h2>}
+            {session.winner?.id && (
+              <>
+                <p>The winner is: {session.winner.name}</p>
+                <p>The answer is: {session.answer}</p>
+              </>
+            )}
+            <p>Game Master: {session.gameMaster.name}</p>
+            {/* <h1 className="heading-1">Players:</h1>
           {session.players.map((player) => (
             <p key={player.id}>
-              {player.name} - Score: {player.score}
+            {player.name} - Score: {player.score}
             </p>
-          ))}
-          <h3>Game Master:</h3>
-          <p>{session.gameMaster.name}</p>
-          {session.question === null && session.gameMaster.id === socket.id && (
-            <div>
-              <label htmlFor="question">
-                <input
-                  type="text"
-                  name="question"
-                  placeholder="Question"
-                  onChange={handleInputChange}
-                  value={inputValues.question}
-                />
-              </label>
-              <label htmlFor="answer">
-                <input
-                  type="text"
-                  name="answer"
-                  placeholder="Answer"
-                  onChange={handleInputChange}
-                  value={inputValues.answer}
-                />
-              </label>
-              <button onClick={createQuestion}>Set Question</button>
-            </div>
-          )}
-          <ul ref={messagesRef}></ul>
+          ))} */}
+          </div>
+
+          <div className="main">
+            <ul ref={messagesRef} className="messages"></ul>
+
+            {session.question === null &&
+              session.gameMaster.id === socket.id && (
+                <div className="input-gm input">
+                  <div className="left">
+                    <label>
+                      <input
+                        type="text"
+                        name="question"
+                        placeholder="Question"
+                        onChange={handleInputChange}
+                        value={inputValues.question}
+                      />
+                    </label>
+                    <label>
+                      <input
+                        type="text"
+                        name="answer"
+                        placeholder="Answer"
+                        onChange={handleInputChange}
+                        value={inputValues.answer}
+                      />
+                    </label>
+                  </div>
+                  <button onClick={createQuestion}>Submit</button>
+                </div>
+              )}
+
+            {!session.winner?.id && session.gameMaster.id !== socket.id && (
+              <div className="input-p input">
+                <label htmlFor="guess">
+                  <input
+                    type="text"
+                    name="guess"
+                    placeholder="Answer"
+                    onChange={handleInputChange}
+                    value={inputValues.guess}
+                  />
+                </label>
+                <button type="button" onClick={submitGuess}>
+                  Guess
+                </button>
+              </div>
+            )}
+          </div>
         </div>
         // display messages
       )}
-      {err && <div>{err}</div>}
     </form>
   );
 };
