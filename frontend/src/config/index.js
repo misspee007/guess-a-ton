@@ -1,5 +1,3 @@
-const PORT = process.env.REACT_APP_PORT || 3002;
-
 exports.CONFIG = {
-  ENDPOINT: `http://localhost:${PORT}`,
+  ENDPOINT: process.env.NODE_ENV === "production" ? "https://guess-a-ton.onrender.com" : process.env.REACT_APP_API_URL
 };

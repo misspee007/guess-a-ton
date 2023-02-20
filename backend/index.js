@@ -30,7 +30,6 @@ io.on("connection", (socket) => {
         "error",
         "Oops! an error occured. Refresh the page and try again"
       );
-      console.log(`Session with ID ${sessionId} does not exist`);
       return;
     }
     socket.join(sessionId);
@@ -74,8 +73,6 @@ io.on("connection", (socket) => {
     io.to(session.id).emit("joined-session", session, session.gameMaster);
     // send message to sender
     io.to(socket.id).emit("new-message", `Welcome to the game,${session.gameMaster.name}! You are the game master.`);
-
-    console.log(`session at start-session: ${JSON.stringify(session)}`);
   });
 
   socket.on("create-question", (sessionId, { question, answer }) => {
@@ -85,10 +82,8 @@ io.on("connection", (socket) => {
         "error",
         "Oops! an error occured. Refresh the page and try again"
       );
-      console.log(`Session with ID ${sessionId} does not exist`);
       return;
     }
-    console.log(`question: ${question}, answer: ${answer}`);
 
     // update session
     session = {

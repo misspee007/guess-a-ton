@@ -143,14 +143,14 @@ const App = () => {
                 </div>
                 <button
                   onClick={createQuestion}
-                  disabled={session.question ? true : false}
+                  disabled={session.question && true}
                 >
                   Submit
                 </button>
               </div>
             )}
 
-            {!session.winner?.id && session.gameMaster.id !== socket.id && (
+            {session.gameMaster.id !== socket.id && (
               <div className="input-p input">
                 <label htmlFor="guess">
                   <input
@@ -164,7 +164,7 @@ const App = () => {
                 <button
                   type="button"
                   onClick={submitGuess}
-                  disabled={session.question ? false : true}
+                  disabled={(session.question || !session.winner) && true}
                 >
                   Guess
                 </button>
