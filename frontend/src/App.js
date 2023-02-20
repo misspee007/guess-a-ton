@@ -94,53 +94,61 @@ const App = () => {
       )}
       {session.id && (
         <div className="session">
-          <div className="header">
-            <h1 className="heading-1">Room {session.id}</h1>
-            {session.question && <h2>Question: {session.question}</h2>}
-            {session.winner?.id && (
-              <>
-                <p>The winner is: {session.winner.name}</p>
-                <p>The answer is: {session.answer}</p>
-              </>
-            )}
-            <p>Game Master: {session.gameMaster.name}</p>
-            {/* <h1 className="heading-1">Players:</h1>
-          {session.players.map((player) => (
-            <p key={player.id}>
-            {player.name} - Score: {player.score}
-            </p>
-          ))} */}
+          <div className="header-wrap">
+            <div className="header">
+              <h1 className="heading-1">Room {session.id}</h1>
+              {session.question && (
+                <>
+                  <h2 className="heading-2">
+                    Question: <p>{session.question}</p>
+                  </h2>
+                  {session.winner?.id && (
+                    <h2 className="heading-2">
+                      Answer: <p>{session.answer}</p>
+                    </h2>
+                  )}
+                </>
+              )}
+              <h2 className="heading-2">
+                Game Master:
+                <p>{session.gameMaster.name}</p>
+              </h2>
+            </div>
           </div>
 
           <div className="main">
             <ul ref={messagesRef} className="messages"></ul>
 
-            {session.question === null &&
-              session.gameMaster.id === socket.id && (
-                <div className="input-gm input">
-                  <div className="left">
-                    <label>
-                      <input
-                        type="text"
-                        name="question"
-                        placeholder="Question"
-                        onChange={handleInputChange}
-                        value={inputValues.question}
-                      />
-                    </label>
-                    <label>
-                      <input
-                        type="text"
-                        name="answer"
-                        placeholder="Answer"
-                        onChange={handleInputChange}
-                        value={inputValues.answer}
-                      />
-                    </label>
-                  </div>
-                  <button onClick={createQuestion}>Submit</button>
+            {session.gameMaster.id === socket.id && (
+              <div className="input-gm input">
+                <div className="left">
+                  <label>
+                    <input
+                      type="text"
+                      name="question"
+                      placeholder="Question"
+                      onChange={handleInputChange}
+                      value={inputValues.question}
+                    />
+                  </label>
+                  <label>
+                    <input
+                      type="text"
+                      name="answer"
+                      placeholder="Answer"
+                      onChange={handleInputChange}
+                      value={inputValues.answer}
+                    />
+                  </label>
                 </div>
-              )}
+                <button
+                  onClick={createQuestion}
+                  disabled={session.question ? true : false}
+                >
+                  Submit
+                </button>
+              </div>
+            )}
 
             {!session.winner?.id && session.gameMaster.id !== socket.id && (
               <div className="input-p input">
@@ -153,7 +161,11 @@ const App = () => {
                     value={inputValues.guess}
                   />
                 </label>
-                <button type="button" onClick={submitGuess}>
+                <button
+                  type="button"
+                  onClick={submitGuess}
+                  disabled={session.question ? false : true}
+                >
                   Guess
                 </button>
               </div>

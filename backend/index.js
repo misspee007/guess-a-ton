@@ -73,7 +73,7 @@ io.on("connection", (socket) => {
     io.emit("update-sessions", sessions);
     io.to(session.id).emit("joined-session", session, session.gameMaster);
     // send message to sender
-    io.to(socket.id).emit("new-message", "Welcome to the game! You are the game master.");
+    io.to(socket.id).emit("new-message", `Welcome to the game,${session.gameMaster.name}! You are the game master.`);
 
     console.log(`session at start-session: ${JSON.stringify(session)}`);
   });

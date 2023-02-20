@@ -1,43 +1,43 @@
 :root {
-  --gray-light: #f6f6f6;
+  --gray-light: #f6f6f691;
+  --gray-medium: #f6f6f6;
+  --gray-dark: #e8e8e8;
   --blue-light: #61dafb;
   --blue-dark: #282c34;
-  --gray-dark: #e8e8e8;
-
-  --input-bg-color: #fff;
-  --error-color: #ff4136;
+  --error: #ff4136;
 }
 
-*{
+* {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
 body {
-  font-family: 'Roboto', sans-serif;
+  font-family: "Roboto", sans-serif;
   display: flex;
   justify-content: center;
   align-items: center;
+  font-size: 1rem;
 }
 
-form{
+form {
   height: 100vh;
 }
 
-.heading-1{
+.heading-1 {
   font-size: 1.5rem;
   font-weight: 700;
-  margin-bottom: 20px;
+  margin-bottom: 15px;
   text-align: center;
   color: var(--blue-dark);
 }
 
-ul{
+ul {
   list-style: none;
 }
 
-button{
+button {
   background-color: var(--blue-light);
   color: var(--main-text-color);
   border: none;
@@ -46,9 +46,14 @@ button{
   cursor: pointer;
   transition: all 0.2s ease-in-out;
 }
+/* disabled button */
+button:disabled {
+  background-color: var(--gray-dark);
+  cursor: not-allowed;
+}
 
-.home{
-  background-color: var(--gray-light);
+.home {
+  background-color: var(--gray-medium);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -57,53 +62,91 @@ button{
   height: 100vh;
   padding: 20px;
 }
-.home button{
+.home button {
   margin-top: 20px;
 }
-.home .btn-start{
+.home .btn-start {
   background-color: var(--blue-dark);
   color: #ffffff;
 }
 
-.session{
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+.session {
+  display: grid;
+  grid-template-rows: 1fr 6fr;
   min-width: 100vw;
   height: 100%;
 }
-.session .header{
-  background-color: var(--gray-light);
-  padding: .5rem;
-  text-align: left;
+.session .header-wrap {
+  min-width: 100vw;
+  background-color: var(--gray-medium);
   border-bottom: var(--gray-dark) 1px solid;
 }
-.session .header .heading-1{
+.session .header {
+  padding: 0.5rem;
+  text-align: left;
+  position: fixed;
+  background-color: var(--gray-medium);
+  min-width: 100vw;
+  /* height: 100%; */
+}
+.session .header .heading-1 {
   text-align: left;
 }
-.session .main .input{
-  padding: .5rem;
-  background-color: var(--gray-light);
+.session .header .heading-2{
+  text-align: left;
+  font-size: 1rem;
+  color: var(--blue-dark);
+  display: flex;
+}
+.session .header .heading-2 p{
+  font-weight: 400;
+  padding-left: 5px;
+}
+.session .main{
+  display: flex;
+  flex-direction: column;
+}
+.session .main .input-wrapper{
+  border: 1px solid red;
+}
+.session .main .input {
+  padding: 0.5rem;
+  background-color: var(--gray-medium);
   border-top: var(--gray-dark) 1px solid;
   display: grid;
   grid-template-columns: 3fr 1fr;
-  column-gap: .5rem;
+  column-gap: 0.5rem;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
 }
-.session .main .input button{
-  padding: .5rem;
+.session .main .input button {
+  padding: 0.5rem;
 }
-.session .main input[type="text"]{
+.session .main input[type="text"] {
   border: none;
-  background-color: var(--input-bg-color);
-  padding: .5rem;
+  padding: 0.5rem;
   border-radius: 5px;
   width: 100%;
 }
-.session .main input[type="text"]:focus{
+.session .main input[type="text"]:focus {
   outline: none;
 }
-.session .main .input-gm .left{
+.session .main .input-gm .left {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  column-gap: .5rem;
+  column-gap: 0.5rem;
+}
+
+.messages{
+  overflow-y: scroll;
+  /* flex-grow: 1; */
+  height: 78vh;
+  padding: 1rem 0;
+}
+.messages li{
+  padding: .5rem 1rem;
+}
+.messages li:nth-child(even) {
+  background-color: var(--gray-light);
 }
