@@ -150,3 +150,21 @@ button:disabled {
 .messages li:nth-child(even) {
   background-color: var(--gray-light);
 }
+
+/* timer */
+.timer .timer-bar {
+  width: 60%;
+  height: 10px;
+  background-color: var(--gray-dark);
+  border-radius: 5px;
+  margin-bottom: 1rem;
+  position: relative;
+}
+.timer .timer-bar-fill {
+  height: 100%;
+  background-color: var(--blue-light);
+  border-radius: 5px;
+  position: absolute;
+  top: 0;
+  left: 0;
+}

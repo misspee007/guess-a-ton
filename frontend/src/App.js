@@ -16,10 +16,14 @@ const App = () => {
     answer: "",
     guess: "",
   });
+  const [timer, setTimer] = useState(0);
 
   const messagesRef = useRef(null);
 
   useEffect(() => {
+    socket.on("update-timer", (timeLeft) => {
+      setTimer(timeLeft);
+    });
     socket.on("joined-session", (currSession, currPlayer) => {
       setSession(currSession);
       setPlayer(currPlayer);
@@ -97,6 +101,10 @@ const App = () => {
           <div className="header-wrap">
             <div className="header">
               <h1 className="heading-1">Room {session.id}</h1>
+              <h2 className="heading-2">
+                Game Master:
+                <p>{session.gameMaster.name}</p>
+              </h2>
               {session.question && (
                 <>
                   <h2 className="heading-2">
@@ -109,10 +117,19 @@ const App = () => {
                   )}
                 </>
               )}
-              <h2 className="heading-2">
-                Game Master:
-                <p>{session.gameMaster.name}</p>
-              </h2>
+              {/* timer */}
+              <div className="timer">
+                <h2 className="heading-2">
+                  Time Remaining: <p>{timer}s</p>
+                </h2>
+
+                <div className="timer-bar">
+                  <div
+                    className="timer-bar-fill"
+                    style={{ width: `${(timer / 60) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
             </div>
           </div>
 

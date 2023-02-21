@@ -1,15 +1,16 @@
 const express = require("express");
-const path = require('path');
+const path = require("path");
 const { CONFIG } = require("./src/config");
+const startTimer = require("./src/utils/timer.utils");
 
 const app = express();
 const server = require("http").createServer(app);
 
-const rootDir = path.resolve('../');
-app.use(express.static(path.join(rootDir, 'frontend', 'build')));
+const rootDir = path.resolve("../");
+app.use(express.static(path.join(rootDir, "frontend", "build")));
 
-app.get('/', function (req, res) {
-  res.sendFile(path.join(rootDir, 'frontend', 'build', 'index.html'));
+app.get("/", function (req, res) {
+  res.sendFile(path.join(rootDir, "frontend", "build", "index.html"));
 });
 
 const io = require("socket.io")(server, {
@@ -50,7 +51,10 @@ io.on("connection", (socket) => {
 
     io.to(socket.id).emit("joined-session", session, player);
     // send message to session
-    io.to(sessionId).emit("new-message", `Welcome to the game, ${player.name}!`);
+    io.to(sessionId).emit(
+      "new-message",
+      `Welcome to the game, ${player.name}!`
+    );
     io.emit("update-sessions", sessions);
   });
 
@@ -72,7 +76,10 @@ io.on("connection", (socket) => {
     io.emit("update-sessions", sessions);
     io.to(session.id).emit("joined-session", session, session.gameMaster);
     // send message to sender
-    io.to(socket.id).emit("new-message", `Welcome to the game,${session.gameMaster.name}! You are the game master.`);
+    io.to(socket.id).emit(
+      "new-message",
+      `Welcome to the game,${session.gameMaster.name}! You are the game master.`
+    );
   });
 
   socket.on("create-question", (sessionId, { question, answer }) => {
@@ -98,7 +105,8 @@ io.on("connection", (socket) => {
       `You have 60 seconds and 3 chances to guess the correct answer. Your time starts now!\n Question: ${question}`
     );
 
-    console.log(`session: ${JSON.stringify(session)}`);
+    // start countdown timer
+    startTimer(sessionId, answer, session, io);
 
     // update session in global sessions
     sessions = sessions.map((s) => {
