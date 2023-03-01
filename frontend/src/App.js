@@ -16,7 +16,8 @@ const App = () => {
     answer: "",
     guess: "",
   });
-  const [timer, setTimer] = useState(0);
+  const [timer, setTimer] = useState(60);
+  const [chances, setChances] = useState(3);
 
   const messagesRef = useRef(null);
 
@@ -24,13 +25,20 @@ const App = () => {
     socket.on("update-timer", (timeLeft) => {
       setTimer(timeLeft);
     });
+    socket.on("game-over", (sessionId) => {
+      console.log("game over");
+      socket.emit("end-round", sessionId);
+    });
+    socket.on("new-round", () => {
+      setTimer(60);
+      setChances(3);
+    });
     socket.on("joined-session", (currSession, currPlayer) => {
       setSession(currSession);
       setPlayer(currPlayer);
     });
     socket.on("update-session", (updatedSession) => {
       setSession(updatedSession);
-      console.log("updatedSession: ", session);
     });
     socket.on("update-sessions", (currSessions) => {
       setSessions(currSessions);
@@ -52,7 +60,6 @@ const App = () => {
   };
 
   const startSession = () => {
-    console.log("client says session before startSession: ", session);
     socket.emit("start-session");
   };
 
@@ -67,7 +74,10 @@ const App = () => {
 
   const submitGuess = () => {
     // send guess to server
-    socket.emit("guess", session.id, inputValues.guess);
+    socket.emit("guess", session.id, inputValues.guess, chances);
+    // decrement chances
+    const chancesLeft = chances - 1;
+    setChances(chancesLeft);
     // clear input
     setInputValues({ ...inputValues, guess: "" });
   };
@@ -117,18 +127,25 @@ const App = () => {
                   )}
                 </>
               )}
-              {/* timer */}
-              <div className="timer">
-                <h2 className="heading-2">
-                  Time Remaining: <p>{timer}s</p>
-                </h2>
+              <div>
+                <div className="timer">
+                  <h2 className="heading-2">
+                    Time Left: <p>{timer}s</p>
+                  </h2>
 
-                <div className="timer-bar">
-                  <div
-                    className="timer-bar-fill"
-                    style={{ width: `${(timer / 60) * 100}%` }}
-                  ></div>
+                  <div className="timer-bar">
+                    <div
+                      className="timer-bar-fill"
+                      style={{ width: `${(timer / 60) * 100}%` }}
+                    ></div>
+                  </div>
                 </div>
+
+                {session.gameMaster.id !== socket.id && (
+                  <h2 className="heading-2">
+                    Chances Left: <p>{chances}</p>
+                  </h2>
+                )}
               </div>
             </div>
           </div>
@@ -158,10 +175,7 @@ const App = () => {
                     />
                   </label>
                 </div>
-                <button
-                  onClick={createQuestion}
-                  disabled={session.question && true}
-                >
+                <button type="button" onClick={createQuestion}>
                   Submit
                 </button>
               </div>
@@ -178,11 +192,7 @@ const App = () => {
                     value={inputValues.guess}
                   />
                 </label>
-                <button
-                  type="button"
-                  onClick={submitGuess}
-                  disabled={(session.question || !session.winner) && true}
-                >
+                <button type="button" onClick={submitGuess}>
                   Guess
                 </button>
               </div>

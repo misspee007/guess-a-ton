@@ -1,7 +1,7 @@
 const express = require("express");
 const path = require("path");
 const { CONFIG } = require("./src/config");
-const startTimer = require("./src/utils/timer.utils");
+const { startTimer, stopTimer, timerId } = require("./src/utils/timer.utils");
 
 const app = express();
 const server = require("http").createServer(app);
@@ -55,6 +55,7 @@ io.on("connection", (socket) => {
       "new-message",
       `Welcome to the game, ${player.name}!`
     );
+    io.to(sessionId).emit("update-session", session);
     io.emit("update-sessions", sessions);
   });
 
@@ -87,10 +88,17 @@ io.on("connection", (socket) => {
     if (!session) {
       io.to(socket.id).emit(
         "error",
-        "Oops! an error occured. Refresh the page and try again"
+        "Oops! an error occured."
+      );
+      console.log(
+        `Session with ID ${sessionId} does not exist`,
+        "at create-question"
       );
       return;
     }
+
+    // reset timer
+    io.to(sessionId).emit("new-round");
 
     // update session
     session = {
@@ -99,14 +107,13 @@ io.on("connection", (socket) => {
       answer: answer,
     };
     io.to(sessionId).emit("update-session", session);
-    // send message to session except sender
     io.to(sessionId).emit(
       "new-message",
-      `You have 60 seconds and 3 chances to guess the correct answer. Your time starts now!\n Question: ${question}`
+      `You have 3 chances to guess the correct answer. Your time starts now! ⏳\n\n Question: ${question}`
     );
 
     // start countdown timer
-    startTimer(sessionId, answer, session, io);
+    startTimer(sessionId, answer, io);
 
     // update session in global sessions
     sessions = sessions.map((s) => {
@@ -118,7 +125,7 @@ io.on("connection", (socket) => {
     });
   });
 
-  socket.on("guess", (sessionId, guess) => {
+  socket.on("guess", (sessionId, guess, chancesLeft) => {
     const session = sessions.find((session) => session.id === sessionId);
     if (!session) {
       io.to(socket.id).emit(
@@ -129,8 +136,14 @@ io.on("connection", (socket) => {
       return;
     }
 
+    if (chancesLeft < 1) {
+      io.to(socket.id).emit("new-message", "You have exhausted your 3 chances.");
+      return;
+    }
+
     // find player's name
     const player = session.players.find((player) => player.id === socket.id);
+
     // send message to session except sender
     socket.broadcast
       .to(sessionId)
@@ -161,17 +174,21 @@ io.on("connection", (socket) => {
             winner: winner,
             players: players,
           };
+          // stop countdown timer
+          stopTimer(timerId);
+
           io.to(socket.id).emit(
             "new-message",
             `You guessed the right answer! 🎉🎉🎉`
           );
+          io.to(sessionId).emit("update-session", session);
+          io.to(sessionId).emit("game-over", session.id);
           socket.broadcast
             .to(sessionId)
             .emit(
               "new-message",
-              `${winner.name} guessed the right answer! 🎉🎉🎉`
+              `${winner.name} wins! 🎉\n\n The correct answer is "${session.answer}".`
             );
-          io.to(sessionId).emit("update-session", session);
           return session;
         }
         return s;
@@ -182,9 +199,84 @@ io.on("connection", (socket) => {
         .emit("new-message", `${player.name} guessed wrong 👎🏽`);
       io.to(socket.id).emit("new-message", `You guessed wrong 👎🏽`);
       console.log(
-        `guess: ${guess}, answer: ${session.answer}, ${typeof session.answer}`,
+        `guess: ${guess}, answer: ${session.answer}`,
         guess === session.answer
       );
+    }
+  });
+
+  // end round and start new round
+  socket.on("end-round", (sessionId) => {
+    const session = sessions.find((session) => session.id === sessionId);
+    if (!session) {
+      io.to(socket.id).emit(
+        "error",
+        "Oops! an error occured. Refresh the page and try again"
+      );
+      console.log(`Session with ID ${sessionId} does not exist`);
+      return;
+    }
+
+    if (session.gameMaster.id === socket.id) {
+      // add current game master to players
+      session.players.push(session.gameMaster);
+
+      // if there's a winner, make them the new game master
+      if (session.winner) {
+        const newGameMaster = session.players.find(
+          (player) => player.id === session.winner.id
+        );
+        const newPlayers = session.players.filter(
+          (player) => player.id !== session.winner.id
+        );
+        const newSession = {
+          ...session,
+          gameMaster: newGameMaster,
+          players: newPlayers,
+        };
+        io.to(sessionId).emit("update-session", newSession);
+        io.to(sessionId).emit(
+          "new-message",
+          `The new game master is ${newGameMaster.name}! 🎉`
+        );
+
+        // update session in global sessions
+        sessions = sessions.map((s) => {
+          // if session is found, update it
+          if (s.id === sessionId) {
+            return newSession;
+          }
+          return s;
+        });
+      }
+
+      // if there's no winner, make the next player the game master
+      if (!session.winner) {
+        const newGameMaster = session.players[0];
+        const newPlayers = session.players.filter(
+          (player) => player.id !== newGameMaster.id
+        );
+        const newSession = {
+          ...session,
+          gameMaster: newGameMaster,
+          players: newPlayers,
+        };
+
+        io.to(sessionId).emit("update-session", newSession);
+        io.to(sessionId).emit(
+          "new-message",
+          `The new game master is ${newGameMaster.name}! 🎉`
+        );
+
+        // update session in global sessions
+        sessions = sessions.map((s) => {
+          // if session is found, update it
+          if (s.id === sessionId) {
+            return newSession;
+          }
+          return s;
+        });
+      }
     }
   });
 
