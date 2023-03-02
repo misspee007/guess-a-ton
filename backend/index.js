@@ -160,7 +160,7 @@ io.on("connection", (socket) => {
           winner = player;
           return {
             ...player,
-            score: player.score + 1,
+            score: player.score + 10,
           };
         }
         return player;

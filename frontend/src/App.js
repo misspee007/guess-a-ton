@@ -75,11 +75,14 @@ const App = () => {
   const submitGuess = () => {
     // send guess to server
     socket.emit("guess", session.id, inputValues.guess, chances);
+    // clear input
+    setInputValues({ ...inputValues, guess: "" });
+    if (chances < 1) {
+      return;
+    }
     // decrement chances
     const chancesLeft = chances - 1;
     setChances(chancesLeft);
-    // clear input
-    setInputValues({ ...inputValues, guess: "" });
   };
 
   function handleInputChange(e) {
@@ -206,3 +209,8 @@ const App = () => {
 };
 
 export default App;
+
+// Todo:
+// - fix timer not resetting after new round starts
+// - fix disable buttons
+// - fix changes left not decrementing after new round starts
