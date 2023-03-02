@@ -166,6 +166,9 @@ const App = () => {
                       placeholder="Question"
                       onChange={handleInputChange}
                       value={inputValues.question}
+                      disabled={
+                        session.question && !session.winner && timer > 0
+                      }
                     />
                   </label>
                   <label>
@@ -175,10 +178,15 @@ const App = () => {
                       placeholder="Answer"
                       onChange={handleInputChange}
                       value={inputValues.answer}
+                      disabled={!inputValues.question}
                     />
                   </label>
                 </div>
-                <button type="button" onClick={createQuestion}>
+                <button
+                  type="button"
+                  onClick={createQuestion}
+                  disabled={!inputValues.answer || !inputValues.question}
+                >
                   Submit
                 </button>
               </div>
@@ -193,9 +201,16 @@ const App = () => {
                     placeholder="Answer"
                     onChange={handleInputChange}
                     value={inputValues.guess}
+                    disabled={
+                      !session.question || session.winner || timer === 0
+                    }
                   />
                 </label>
-                <button type="button" onClick={submitGuess}>
+                <button
+                  type="button"
+                  onClick={submitGuess}
+                  disabled={!inputValues.guess}
+                >
                   Guess
                 </button>
               </div>
@@ -209,8 +224,3 @@ const App = () => {
 };
 
 export default App;
-
-// Todo:
-// - fix timer not resetting after new round starts
-// - fix disable buttons
-// - fix changes left not decrementing after new round starts
